@@ -21,6 +21,10 @@
 
  
 
+#define INQ_REPLY_LEN 96
+#define INQ_CMD_CODE 0x12
+#define INQ_CMD_LEN 6
+
 
 #define VERSION "0.1"
 #define SENSEBUF_LEN 32
@@ -31,3 +35,13 @@ void debugPrintcmd(uint8_t *cc);
 void evic_cmd( uint8_t * cc, uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4, uint8_t c5, 		uint8_t c6, uint8_t c7, uint8_t c8, uint8_t c9, uint8_t c10, 		uint8_t c11, uint8_t c12, uint8_t c13, uint8_t c14, uint8_t c15);
 void debug_printf(char *fmt, ...);
 
+
+
+//Evic Live Config
+struct evic_current_cfg {
+	
+	uint8_t padder[70];
+	char last_name[17];
+	char first_name[22];
+	
+};

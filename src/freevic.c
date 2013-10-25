@@ -7,20 +7,29 @@ int in_debug=1;
 
 int main(int argc, char ** argv) {
 	
-	uint8_t cdb[16] = {0}, evicreply[1024] = {0};
+	uint8_t cdb[16] = {0}, evicreply[1024] = {0}, init_cdb[16]={0};
 	
 	int rc;
-	uint8_t * cdbs[1];
+	uint8_t * cdbs[2];
 
-//	long long rsize;
-	// 12 00 00 00 60 00
+
 
 	evic_cmd(cdb, 0xc9, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	cdbs[0]=cdb;
-	rc=evic_send_CDB("/dev/sg2", evicreply, sizeof(evicreply), cdbs, 1, 0, -1, 1);
+	
+	evic_cmd(init_cdb, 0x12, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	
+	cdbs[0]=init_cdb;
+	cdbs[1]=cdb;
+	
+	
+	rc=evic_send_CDB("/dev/sg2", evicreply, sizeof(evicreply), cdbs, 2, 0, -1, 1);
 	
 
+	struct evic_current_cfg * evic_status = (struct evic_current_cfg *)&evicreply;
 	
+	printf("Current Evic Settings:\n");
+	printf("First Name: %s\n", evic_status->first_name);
+	printf("Last Name: %s\n", evic_status->last_name);
 	
 	 
 	
@@ -111,7 +120,7 @@ int evic_send_CDB(char * device, uint8_t * rbuf, size_t rbuf_len, uint8_t ** cdb
 		
 		
 		rc = ioctl (fd, SG_IO, &sg_io);
-		//debugPrintf("status: %02X", sg_io.status);
+		debug_printf("status: %02X", sg_io.status);
 		if(rc == -1 || sg_io.status != 0x00) {
 			if(exit_or_return == 1)  {
 				close(fd);
