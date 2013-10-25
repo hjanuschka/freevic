@@ -1,0 +1,2 @@
+bin_PROGRAMS = freevic
+freevic_SOURCES = freevic.c
