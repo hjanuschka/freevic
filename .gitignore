@@ -4,11 +4,9 @@ src/freevic
 src/freevic.o
 
 # http://www.gnu.org/software/autoconf
-
-/autom4te.cache
-/aclocal.m4
-/compile
-/configure
-/depcomp
-/install-sh
-/missing
+config.h.in~
+m4
+aclocal.m4
+autom4te.cache
+depcomp
+missing
