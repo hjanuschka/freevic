@@ -22,7 +22,7 @@ int main(int argc, char ** argv) {
 	struct evic_current_cfg * evic_status; //this is where the current live config will be represented
 	
 	//Open the device
-	evic_device_handle=open("/dev/sg2", O_RDONLY);
+	evic_device_handle=open(argv[1], O_RDONLY);
 	//Unlock
 	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
