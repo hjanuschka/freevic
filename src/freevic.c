@@ -170,7 +170,7 @@ int evic_send_CDB(char * device, uint8_t * rbuf, size_t rbuf_len, uint8_t ** cdb
 		memset(&sg_io, 0, sizeof(sg_io));
 		sg_io.interface_id    = 'S';
 		sg_io.cmdp            = cdb;
-		sg_io.cmd_len         = 12*sizeof(uint8_t);
+		sg_io.cmd_len         = 8*sizeof(uint8_t);
 		sg_io.dxferp          = rbuf;
 		sg_io.dxfer_len       = rbuf_len;
 		sg_io.dxfer_direction = SG_DXFER_FROM_DEV;
