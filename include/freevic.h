@@ -18,7 +18,7 @@
 #include <getopt.h>
 #include <stdarg.h>
 #include <dlfcn.h>
-
+#include <endian.h>
  
 
 #define INQ_REPLY_LEN 96
@@ -41,7 +41,11 @@ void debug_printf(char *fmt, ...);
 struct evic_current_cfg {
 	uint8_t volt_value;
 	uint8_t atomizer_resistance;
-	uint8_t padder[21];
+	uint8_t padd5[11];
+	//14-15
+	uint16_t puff_count_total;
+	
+	uint8_t padder[7];
 	uint8_t battery_perc;
 	uint8_t padder1[46];
 	char last_name[17];

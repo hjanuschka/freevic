@@ -60,7 +60,8 @@ int main(int argc, char ** argv) {
 	}
 	printf("\n");
 	
-		printf("Atomizer Resistance %0.2f ohm\n", (float)evic_status->atomizer_resistance/10);	 
+	printf("Atomizer Resistance %0.2f ohm\n", (float)evic_status->atomizer_resistance/10);	 
+	printf("Puff Count Total:%u\n", htobe16(evic_status->puff_count_total));	 
 	
 }
 
