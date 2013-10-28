@@ -1,1 +1,17 @@
-a linux command tool for the evic ecigarette battery controller
+the start of a linux CLI for the evic electronic cigarette
+
+
+# to compile
+./autogen.sh
+./configure
+make
+
+
+
+# to run
+plug in your evic - and look in your dmesg for the SG number and run
+./src/freevic /dev/sg2 # where SG2 is your device handle
+
+
+
+feel free to contribute
