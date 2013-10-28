@@ -15,14 +15,37 @@ int main(int argc, char ** argv) {
 	
 	int evic_device_handle;
 	uint8_t evic_reply[512];
+	uint8_t evic_core_reply[512];
 	uint8_t evic_empty_reply[1];
 	uint8_t cdb[16] = {0};
 	uint8_t * cdbs[1];
 	
 	struct evic_current_cfg * evic_status; //this is where the current live config will be represented
+	struct evic_core_cfg * evic_core;
 	
 	//Open the device
 	evic_device_handle=open(argv[1], O_RDONLY);
+	
+	
+		//Unlock
+	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
+	//Protect from removal
+	evic_cmd(cdb, 0x1e, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
+	//Get Current binary chunk (seems to be config)
+	evic_cmd(cdb, 0xc9, 0x00, 0x03, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_core_reply, sizeof(evic_core_reply), cdbs, 1, 0,evic_device_handle, 0);
+	
+	
+	
+	
+	
+	
+	
 	//Unlock
 	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
@@ -39,8 +62,14 @@ int main(int argc, char ** argv) {
 	
 
 	evic_status = (struct evic_current_cfg *)&evic_reply;
+	evic_core = (struct evic_core_cfg *)&evic_core_reply;
 	
-	printf("Current Evic Settings:\n");
+	printf("###############################\n");
+	printf("Core Evic Settings:\n");
+	printf("Serial: %u\n", htobe32(evic_core->serial_no));
+	printf("###############################\n");
+	printf("User Evic Settings:\n");
+	printf("###############################\n");
 	printf("First Name: %s\n", evic_status->first_name);
 	printf("Last Name: %s\n", evic_status->last_name);
 	printf("Battery Life: %u%%\n", evic_status->battery_perc);

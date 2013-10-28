@@ -36,7 +36,11 @@ void evic_cmd( uint8_t * cc, uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4, uin
 void debug_printf(char *fmt, ...);
 
 
-
+struct evic_core_cfg {
+	uint8_t padder[16];
+	uint32_t serial_no;
+		
+};
 //Evic Live Config
 struct evic_current_cfg {
 	uint8_t volt_value;
