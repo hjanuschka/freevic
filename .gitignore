@@ -1,6 +1,5 @@
 # http://www.gnu.org/software/automake
 
-Makefile.in
 src/freevic
 src/freevic.o
 
