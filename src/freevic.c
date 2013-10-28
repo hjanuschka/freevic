@@ -1,5 +1,11 @@
 #include "freevic.h"
 
+/*
+IT's alpha 0.1 - it is not beautyfull, just a proof of concept - once the structs have been worked out i ll do a cleaner version :)
+use at your own risk!!
+
+
+*/
 
 int in_debug=1;
 
@@ -13,29 +19,26 @@ int main(int argc, char ** argv) {
 	uint8_t cdb[16] = {0};
 	uint8_t * cdbs[1];
 	
+	struct evic_current_cfg * evic_status; //this is where the current live config will be represented
+	
 	//Open the device
 	evic_device_handle=open("/dev/sg2", O_RDONLY);
-	
-	
 	//Unlock
 	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
 	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
-	
 	//Protect from removal
 	evic_cmd(cdb, 0x1e, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
 	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
-	
 	//Get Current binary chunk (seems to be config)
-	
 	evic_cmd(cdb, 0xc9, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
 	evic_send_CDB("ALREADY OPENED BEFORE", evic_reply, sizeof(evic_reply), cdbs, 1, 0,evic_device_handle, 0);
 	
 	
 
-	struct evic_current_cfg * evic_status = (struct evic_current_cfg *)&evic_reply;
+	evic_status = (struct evic_current_cfg *)&evic_reply;
 	
 	printf("Current Evic Settings:\n");
 	printf("First Name: %s\n", evic_status->first_name);
