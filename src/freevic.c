@@ -20,12 +20,12 @@ int main(int argc, char ** argv) {
 	//Unlock
 	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
-	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, sizeof(evic_empty_reply), cdbs, 1, 0,evic_device_handle, 0);
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
 	
 	//Protect from removal
 	evic_cmd(cdb, 0x1e, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
-	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, sizeof(evic_empty_reply), cdbs, 1, 0,evic_device_handle, 0);
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, 0, cdbs, 1, 0,evic_device_handle, 0);
 	
 	//Get Current binary chunk (seems to be config)
 	
@@ -40,10 +40,28 @@ int main(int argc, char ** argv) {
 	printf("Current Evic Settings:\n");
 	printf("First Name: %s\n", evic_status->first_name);
 	printf("Last Name: %s\n", evic_status->last_name);
+	printf("Battery Life: %u%%\n", evic_status->battery_perc);
+	printf("Evic Mode: %u - ", evic_status->mode);
 	
-	 
+	
+	switch(evic_status->mode) {
+			case 0:
+				printf("Volt Mode (value: %0.2f)", (float)evic_status->volt_value/10);
+			break;		
+			case 1:
+				printf("Watt Mode (value: %0.2f)", (float)evic_status->watt_value/10);
+			break;
+			default:
+				printf("unkown");
+			break;
+	}
+	printf("\n");
+	
+		printf("Atomizer Resistance %0.2f ohm\n", (float)evic_status->atomizer_resistance/10);	 
 	
 }
+
+
 
 void evic_cmd( uint8_t * cc, uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4, uint8_t c5,
 		uint8_t c6, uint8_t c7, uint8_t c8, uint8_t c9, uint8_t c10,
@@ -106,7 +124,7 @@ int evic_send_CDB(char * device, uint8_t * rbuf, size_t rbuf_len, uint8_t ** cdb
 			}
 		}
 	} else {
-		//debug_printf("USE already open DEVICE: %d", already_open_device);
+		debug_printf("USE already open DEVICE: %d", already_open_device);
 		fd = already_open_device;
 	}
 

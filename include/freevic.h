@@ -39,9 +39,17 @@ void debug_printf(char *fmt, ...);
 
 //Evic Live Config
 struct evic_current_cfg {
-	
-	uint8_t padder[70];
+	uint8_t volt_value;
+	uint8_t atomizer_resistance;
+	uint8_t padder[21];
+	uint8_t battery_perc;
+	uint8_t padder1[46];
 	char last_name[17];
 	char first_name[22];
+	//86
+	uint8_t padder3[6];
+	uint8_t watt_value;
+	uint8_t padder2;
+	uint8_t mode;	
 	
 };
