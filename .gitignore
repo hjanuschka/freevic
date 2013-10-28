@@ -10,3 +10,6 @@ aclocal.m4
 autom4te.cache
 depcomp
 missing
+stamp-h1
+configure
+config.h.in
