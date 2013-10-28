@@ -7,25 +7,35 @@ int in_debug=1;
 
 int main(int argc, char ** argv) {
 	
-	uint8_t cdb[16] = {0}, evicreply[1024] = {0}, init_cdb[16]={0};
+	int evic_device_handle;
+	uint8_t evic_reply[512];
+	uint8_t evic_empty_reply[1];
+	uint8_t cdb[16] = {0};
+	uint8_t * cdbs[1];
 	
-	int rc;
-	uint8_t * cdbs[2];
-
-
-
+	//Open the device
+	evic_device_handle=open("/dev/sg2", O_RDONLY);
+	
+	
+	//Unlock
+	evic_cmd(cdb, 0xcc, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, sizeof(evic_empty_reply), cdbs, 1, 0,evic_device_handle, 0);
+	
+	//Protect from removal
+	evic_cmd(cdb, 0x1e, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_empty_reply, sizeof(evic_empty_reply), cdbs, 1, 0,evic_device_handle, 0);
+	
+	//Get Current binary chunk (seems to be config)
+	
 	evic_cmd(cdb, 0xc9, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	cdbs[0]=cdb;
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_reply, sizeof(evic_reply), cdbs, 1, 0,evic_device_handle, 0);
 	
-	evic_cmd(init_cdb, 0x12, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	
-	cdbs[0]=init_cdb;
-	cdbs[1]=cdb;
-	
-	
-	rc=evic_send_CDB("/dev/sg2", evicreply, sizeof(evicreply), cdbs, 2, 0, -1, 1);
 	
 
-	struct evic_current_cfg * evic_status = (struct evic_current_cfg *)&evicreply;
+	struct evic_current_cfg * evic_status = (struct evic_current_cfg *)&evic_reply;
 	
 	printf("Current Evic Settings:\n");
 	printf("First Name: %s\n", evic_status->first_name);
