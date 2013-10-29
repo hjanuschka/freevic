@@ -37,10 +37,15 @@ void debug_printf(char *fmt, ...);
 
 
 struct evic_core_cfg {
-	uint8_t padder[16];
+	uint8_t padder[6];
+	char product_name[4];
+	uint8_t padder2[6];
 	uint32_t serial_no;
 		
 };
+
+
+
 //Evic Live Config
 struct evic_current_cfg {
 	uint8_t volt_value;
@@ -50,14 +55,41 @@ struct evic_current_cfg {
 	uint16_t puff_count_total;
 	
 	uint8_t padder[7];
-	uint8_t battery_perc;
-	uint8_t padder1[46];
-	char last_name[17];
-	char first_name[22];
+	uint8_t battery_perc; //22
+	
+	uint16_t battery_mah;
+	uint8_t padder1[44];
+	char first_name[17];
+	char last_name[20];
 	//86
+	uint8_t gender;
+	uint8_t age;
+	
 	uint8_t padder3[6];
 	uint8_t watt_value;
 	uint8_t padder2;
 	uint8_t mode;	
+	
+	uint8_t padder4[12];
+	//PAD FROM 116-130 RVWA 130
+	uint8_t rvwa_seconds[10];
+	uint8_t rvwa_watt[10];
+	uint8_t rvwa_padder[2];
+	char 		rvwa_name[10];
+	
+	
+	uint8_t rvwb_seconds[10];
+	uint8_t rvwb_watt[10];
+	uint8_t rvwb_padder[2];
+	char 		rvwb_name[10];
+	
+	uint8_t rvwc_seconds[10];
+	uint8_t rvwc_watt[10];
+	uint8_t rvwc_padder[2];
+	char 		rvwc_name[10];
+	
+	uint8_t rvv_seconds[10];
+	uint8_t rvv_volts[10];
+	
 	
 };

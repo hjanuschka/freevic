@@ -1,3 +1,5 @@
+#apt-get install gcc-multilib
+#libgd2-xpm-dev
 the start of a linux CLI for the evic electronic cigarette
 
 

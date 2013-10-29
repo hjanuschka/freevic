@@ -10,21 +10,14 @@ use at your own risk!!
 int in_debug=1;
 
 
-
-int main(int argc, char ** argv) {
-	
+int evic_get_data_from_device(char * device, uint8_t * evic_core_reply, int evic_core_reply_size, uint8_t * evic_user_reply,int evic_user_reply_size) {
 	int evic_device_handle;
-	uint8_t evic_reply[512];
-	uint8_t evic_core_reply[512];
 	uint8_t evic_empty_reply[1];
 	uint8_t cdb[16] = {0};
 	uint8_t * cdbs[1];
 	
-	struct evic_current_cfg * evic_status; //this is where the current live config will be represented
-	struct evic_core_cfg * evic_core;
-	
 	//Open the device
-	evic_device_handle=open(argv[1], O_RDONLY);
+	evic_device_handle=open(device, O_RDONLY);
 	
 	
 		//Unlock
@@ -38,7 +31,7 @@ int main(int argc, char ** argv) {
 	//Get Current binary chunk (seems to be config)
 	evic_cmd(cdb, 0xc9, 0x00, 0x03, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
-	evic_send_CDB("ALREADY OPENED BEFORE", evic_core_reply, sizeof(evic_core_reply), cdbs, 1, 0,evic_device_handle, 0);
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_core_reply, evic_core_reply_size, cdbs, 1, 0,evic_device_handle, 0);
 	
 	
 	
@@ -57,21 +50,90 @@ int main(int argc, char ** argv) {
 	//Get Current binary chunk (seems to be config)
 	evic_cmd(cdb, 0xc9, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	cdbs[0]=cdb;
-	evic_send_CDB("ALREADY OPENED BEFORE", evic_reply, sizeof(evic_reply), cdbs, 1, 0,evic_device_handle, 0);
+	evic_send_CDB("ALREADY OPENED BEFORE", evic_user_reply,evic_user_reply_size, cdbs, 1, 0,evic_device_handle, 0);
+	
+	
+	
+}
+
+int main(int argc, char ** argv) {
+	
+	/*
+	argv[1] = device or file
+	argv[2] = if argv0 is file - than argv1 == core argv2 == user dump
+	*/
+	int x;
+	uint8_t evic_reply[512];
+	uint8_t evic_core_reply[512];
+	FILE * evic_core_dmp, * evic_user_dmp;
+	struct stat file_info;
+	struct evic_current_cfg * evic_status; //this is where the current live config will be represented
+	struct evic_core_cfg * evic_core;
+	
+	
+	
+	stat(argv[1], &file_info);
+	
+	
+	if(S_ISREG(file_info.st_mode)) {
+		debug_printf("IS FILE");
+		evic_core_dmp = fopen(argv[1], "rb");
+		evic_user_dmp = fopen(argv[2], "rb");
+		
+		fread(evic_core_reply,sizeof(uint8_t),sizeof(evic_core_reply),evic_core_dmp);
+		fread(evic_reply,sizeof(uint8_t),sizeof(evic_reply),evic_user_dmp);
+		
+		fclose(evic_core_dmp);
+		fclose(evic_user_dmp);
+	} else {
+		debug_printf("is device");
+		evic_get_data_from_device(argv[1], evic_core_reply,sizeof(evic_core_reply), evic_reply,sizeof(evic_reply));
+	}
+	
 	
 	
 
 	evic_status = (struct evic_current_cfg *)&evic_reply;
 	evic_core = (struct evic_core_cfg *)&evic_core_reply;
 	
+	//terminate product name 
+	evic_core->product_name[4]=0x0;
+	
 	printf("###############################\n");
 	printf("Core Evic Settings:\n");
 	printf("Serial: %u\n", htobe32(evic_core->serial_no));
+	printf("Product Name: '%s'\n", evic_core->product_name);
 	printf("###############################\n");
 	printf("User Evic Settings:\n");
 	printf("###############################\n");
 	printf("First Name: %s\n", evic_status->first_name);
 	printf("Last Name: %s\n", evic_status->last_name);
+	printf("Age: %u\n", evic_status->age);
+	
+	//0=mr 1=mrs 2=miss 3=ms
+	printf("Gender: %u ", evic_status->gender);
+	switch(evic_status->gender) {
+		
+		case 0:
+			printf("Mr");
+		break;
+		case 1:
+			printf("Mrs");
+		break;
+		case 2:
+			printf("Miss");
+		break;
+		case 3:
+			printf("Ms");
+		break;
+		default:
+				printf("Unkown");
+		break;
+		
+		
+	}
+	printf("\n");
+	
 	printf("Battery Life: %u%%\n", evic_status->battery_perc);
 	printf("Evic Mode: %u - ", evic_status->mode);
 	
@@ -91,7 +153,66 @@ int main(int argc, char ** argv) {
 	
 	printf("Atomizer Resistance %0.2f ohm\n", (float)evic_status->atomizer_resistance/10);	 
 	printf("Puff Count Total:%u\n", htobe16(evic_status->puff_count_total));	 
+	printf("Battery mAh:%u\n", htobe16(evic_status->battery_mah));	 
 	
+	
+	
+	printf("###############################\n");
+	printf("RVW Block 1 Settings\n");
+	printf("\t Name: %s\n", evic_status->rvwa_name);
+	printf("\t\t Seconds:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwa_seconds[x]/10);
+	}	
+	printf("\n");
+	printf("\t\t Watt:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwa_watt[x]/10);
+	}	
+	printf("\n");
+	
+	printf("RVW Block 2 Settings\n");
+	printf("\t Name: %s\n", evic_status->rvwb_name);
+	printf("\t\t Seconds:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwb_seconds[x]/10);
+	}	
+	printf("\n");
+	printf("\t\t Watt:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwb_watt[x]/10);
+	}	
+	printf("\n");
+	
+	printf("RVW Block 3 Settings\n");
+	printf("\t Name: %s\n", evic_status->rvwc_name);
+	printf("\t\t Seconds:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwc_seconds[x]/10);
+	}	
+	printf("\n");
+	printf("\t\t Watt:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvwc_watt[x]/10);
+	}	
+	printf("\n");
+	
+	
+	printf("RVV Settings\n");
+	
+	printf("\t\t Seconds:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvv_seconds[x]/10);
+	}	
+	printf("\n");
+	printf("\t\t Watt:");
+	for(x=0; x<10; x++) {
+		printf("%0.2f,", (float)evic_status->rvv_volts[x]/10);
+	}	
+	printf("\n");
+	
+	printf("###############################\n");
+
 }
 
 
