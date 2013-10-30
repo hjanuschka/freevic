@@ -30,11 +30,11 @@
 #define SENSEBUF_LEN 32
 
 
-int evic_send_CDB(char * device, uint8_t * rbuf, size_t rbuf_len, uint8_t ** cdbs, size_t cdb_count, int nonblock, int already_open_device, int exit_or_return);
-void debugPrintcmd(uint8_t *cc);
-void evic_cmd( uint8_t * cc, uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4, uint8_t c5, 		uint8_t c6, uint8_t c7, uint8_t c8, uint8_t c9, uint8_t c10, 		uint8_t c11, uint8_t c12, uint8_t c13, uint8_t c14, uint8_t c15);
-void debug_printf(char *fmt, ...);
+int freevic_cdb(int device, uint8_t  * cdb, uint8_t cdb_len, int cdb_type, uint8_t * return_buffer, int return_buffer_len);
+void freevic_hexdump(void *mem, unsigned int len);
 
+void debug_printf(char *fmt, ...);
+void debug_printf(char *fmt, ...);
 
 struct evic_core_cfg {
 	uint8_t padder[6];
