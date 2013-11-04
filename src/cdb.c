@@ -31,6 +31,10 @@ int freevic_cdb(int device, uint8_t  * cdb, uint8_t cdb_len, int cdb_type, uint8
 		
 		
 		rc = ioctl (device, SG_IO, &sg_io);
+		debug_printf("######################################\n");
+		debug_printf("SENSE BUFFER\n");
+		freevic_hexdump(sensebuf, sizeof(sensebuf));
+		debug_printf("######################################\n");
 		
 		if(return_buffer_len>0 && cdb_type == SG_DXFER_FROM_DEV) {
 			debug_printf("RETURN BLOCK\n");

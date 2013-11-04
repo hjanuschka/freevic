@@ -7,7 +7,146 @@ use at your own risk!!
 
 */
 
-int in_debug=1;
+int global_debug=0;
+char * global_device="/dev/sg2";
+int global_export_cfgs=0;
+int global_wich_action=0;
+
+
+void dispHelp(void) {
+printf("\n");
+printf("	Freevic\n");
+printf("	   -d, --debug        	Enable Debug Output\n");
+printf("	   -D, --device         Device (default: /dev/sg2)\n");
+printf("	   -e, --export-cfg     Device (default: not set)\n");
+printf("	   -I, --info         	Print info about the device\n");
+printf("	   -R, --records        Get the Vaping Records stored on your device\n");
+printf("	\n");
+exit(1);
+}
+void parse_options(int argc, char ** argv){
+	static struct option longopts[] = {
+		{ "help",	0, NULL, 'h'},
+		{ "debug",	0, NULL, 'd'},
+		{ "device",	0, NULL, 'D'},
+		{ "export-cfg",	0, NULL, 'e'},
+		{ "info",	0, NULL, 'I'},
+		{ "records",	0, NULL, 'R'},
+		{ NULL,		0, NULL, 0}
+	};
+	int c;
+
+	for (;;) {
+		c = getopt_long(argc, argv, "dheIRD:", longopts, (int *) 0);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 'h':  /* --help */
+			dispHelp();
+		break;
+		case 'I':
+			global_wich_action=0;
+		break;
+		case 'R':
+			global_wich_action=1;
+		break;
+		case 'd':
+			global_debug=1;
+			
+		break;
+		case 'e':
+			global_export_cfgs=1;
+			
+		break;
+		case 'D':
+			global_device=optarg;
+		break;
+		default:
+			dispHelp();
+		}
+	}
+	
+	
+		
+	
+}
+
+
+
+
+int evic_get_records(char * device) {
+	int evic_device_handle;
+	uint8_t return_buffer[1024] = {0};
+	char * fw_block_file;
+	int x,y;
+
+	FILE * output;
+
+	uint8_t unlock_device_cdb_1[8]= {0xcc, 0x80, 0x02, 0x00,0x80,0x00,0x00,0x04};
+	uint8_t unlock_device_cdb_2[8]= {0x1e, 0x00, 0x00, 0x01,0x00,0x00,0x00,0x00};
+	
+	
+	uint8_t record_init[8] = 						  	{0xcb, 0x80, 0x00, 0x00,0x00,0x00,0x00,0x04};
+	uint8_t record_init2[8] = 						  {0xcb, 0x80, 0x00, 0x00,0x04,0x00,0x00,0x04};
+	
+	uint8_t get_records1[8] = 						{0xc9, 0x00, 0x02, 0x00,0x80,0x00,0x00,0x04};
+	
+	
+	struct  evic_vape_record   * vape_records;
+	
+
+	evic_device_handle=open(device, O_RDONLY);
+
+	
+	
+	//Unlock
+	freevic_cdb(evic_device_handle, unlock_device_cdb_1, sizeof(unlock_device_cdb_1), SG_DXFER_FROM_DEV, return_buffer, 0);
+	freevic_cdb(evic_device_handle, unlock_device_cdb_2, sizeof(unlock_device_cdb_2), SG_DXFER_FROM_DEV, return_buffer, 0);
+
+	
+	//output=fopen(output_dump, "wb");
+	
+
+	printf("Date;Resistance;Voltage;Duration\n");
+	//Init record DL
+	//freevic_cdb(evic_device_handle, record_init, sizeof(record_init), SG_DXFER_FROM_DEV, return_buffer, 0);
+
+	//memset(return_buffer, 0x0, 1024);
+	//freevic_cdb(evic_device_handle, get_records1, sizeof(get_records1), SG_DXFER_FROM_DEV, return_buffer, sizeof(return_buffer));
+	//fwrite(return_buffer, sizeof(uint8_t), sizeof(return_buffer), output);
+	
+	
+	for(x=0; x<=16; x++) {
+		
+		freevic_cdb(evic_device_handle, record_init, sizeof(record_init), SG_DXFER_FROM_DEV, return_buffer, 0);
+	
+		memset(return_buffer, 0x0, 1024);
+		freevic_cdb(evic_device_handle, get_records1, sizeof(get_records1), SG_DXFER_FROM_DEV, return_buffer, sizeof(return_buffer));
+		
+		//fwrite(return_buffer, sizeof(uint8_t), sizeof(return_buffer), output);
+		
+		
+		//OUTPUT THEM
+		vape_records=(struct evic_vape_record *)&return_buffer;
+		
+		for(y=0; y<128; y++) {
+				if(vape_records[y].duration == 255) break;
+				printf("%u %u %u:%u:%u;%u;%u;%u\n", vape_records[y].year+2000, vape_records[y].unkown,vape_records[y].hours, vape_records[y].minutes, vape_records[y].seconds , vape_records[y].resistance, vape_records[y].voltage, vape_records[y].duration);	
+		}
+		
+		
+		
+		record_init[4] += 4;
+		if(return_buffer[0] = 0xff && return_buffer[sizeof(return_buffer)-1] == 0xff) break;
+		
+	}
+	
+	
+//	fclose(output);
+	
+
+	
+}
 
 int evic_flash_fw(char * device, char * fw_file) {
 	
@@ -106,7 +245,7 @@ int evic_get_data_from_device(char * device, uint8_t * evic_core_reply, int evic
 	
 	
 	uint8_t unlock_device_cdb_1[8]= {0xcc, 0x80, 0x02, 0x00,0x80,0x00,0x00,0x04};
-	uint8_t unlock_device_cdb_2[8]= {0x1e, 0x00, 0x00, 0x01,0x00,0x00,0x00,0x00};
+	uint8_t unlock_device_cdb_2[8]= {0x1e, 0x00, 0x00, 0x01,0x00,0x00,0x00,0x04};
 	uint8_t core_info_cdb[8] =      {0xc9, 0x00, 0x03, 0x00,0x80,0x00,0x00,0x04};
 	uint8_t user_info_cdb[8] =      {0xc9, 0x00, 0x02, 0x00,0x80,0x00,0x00,0x04};
 	
@@ -132,13 +271,9 @@ int evic_get_data_from_device(char * device, uint8_t * evic_core_reply, int evic
 	close(evic_device_handle);
 	
 }
- 
-int main(int argc, char ** argv) {
-	
-	/*
-	argv[1] = device or file
-	argv[2] = if argv0 is file - than argv1 == core argv2 == user dump
-	*/
+
+void evic_display_device_info() {
+
 	int x;
 	uint8_t evic_reply[512];
 	uint8_t evic_core_reply[512];
@@ -149,9 +284,10 @@ int main(int argc, char ** argv) {
 	
 	
 	
-	stat(argv[1], &file_info);
+	stat(global_device, &file_info);
 	
 	
+	/*
 	if(S_ISREG(file_info.st_mode)) {
 		debug_printf("IS FILE\n");
 		evic_core_dmp = fopen(argv[1], "rb");
@@ -163,12 +299,24 @@ int main(int argc, char ** argv) {
 		fclose(evic_core_dmp);
 		fclose(evic_user_dmp);
 	} else {
-		debug_printf("is device\n");
-		evic_get_data_from_device(argv[1], evic_core_reply,sizeof(evic_core_reply), evic_reply,sizeof(evic_reply));
+	*/
+	
+	
+		evic_get_data_from_device(global_device, evic_core_reply,sizeof(evic_core_reply), evic_reply,sizeof(evic_reply));
 		
-		//exit(1);
+		if(global_export_cfgs > 0) {
+			evic_core_dmp = fopen("evic_core_auto.dmp", "wb");
+			evic_user_dmp = fopen("evic_user_auto.dmp", "wb");
+			fwrite(evic_core_reply, sizeof(uint8_t), sizeof(evic_core_reply), evic_core_dmp);
+			fwrite(evic_reply, sizeof(uint8_t), sizeof(evic_reply), evic_user_dmp);
+			fclose(evic_user_dmp);
+			fclose(evic_core_dmp);
+			printf("Wrote CFGS to evic_core_auto.dmp, evic_user_auto.dmp\n");
+		}
 		
+	/*
 	}
+	*/
 	
 	
 	
@@ -178,7 +326,6 @@ int main(int argc, char ** argv) {
 	
 	//terminate product name 
 	evic_core->product_name[4]=0x0;
-	
 	printf("###############################\n");
 	printf("Core Evic Settings:\n");
 	printf("Serial: %u\n", htobe32(evic_core->serial_no));
@@ -292,7 +439,38 @@ int main(int argc, char ** argv) {
 			printf("\n");
 	
 	printf("###############################\n");
+	
+}
+ 
+int main(int argc, char ** argv) {
+	
+	/*
+	argv[1] = device or file
+	argv[2] = if argv0 is file - than argv1 == core argv2 == user dump
+	*/
+	
+	
+	
+	parse_options(argc,argv);
+	 
+	
+	switch(global_wich_action) {
+		case 0:
+				evic_display_device_info();
+		break;
+		case 1:
+			evic_get_records(global_device);
+		break;	
+		default:
+				evic_display_device_info();
+		break;	
+	}
+	
+	
 
+
+
+	
 
 }
 

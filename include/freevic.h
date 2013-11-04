@@ -45,6 +45,17 @@ struct evic_core_cfg {
 };
 
 
+struct evic_vape_record {
+                uint8_t year; // + 2000
+                uint8_t unkown; //SEEMS to be month and day like 180?! WTF?
+                uint8_t hours;
+                uint8_t minutes;
+                uint8_t seconds;
+                uint8_t resistance; // /10
+                uint8_t voltage; // /10
+                uint8_t duration; // /10
+};
+
 
 //Evic Live Config
 struct evic_current_cfg {
@@ -58,8 +69,8 @@ struct evic_current_cfg {
 	uint8_t battery_perc; //22
 	
 	uint16_t battery_mah;
-	uint8_t padder1[44];
-	char first_name[17];
+	uint8_t padder1[45];
+	char first_name[16];
 	char last_name[20];
 	//86
 	uint8_t gender;

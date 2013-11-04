@@ -34,7 +34,7 @@ void freevic_hexdump(void *mem, unsigned int len)
                         {
                                 if(j >= len) /* end of block, not really printing */
                                 {
-                                        putchar(' ');
+                                        debug_printf(" ");
                                 }
                                 else if(isprint(((char*)mem)[j])) /* printable char */
                                 {
@@ -45,7 +45,7 @@ void freevic_hexdump(void *mem, unsigned int len)
                                         debug_printf(".");
                                 }
                         }
-                        putchar('\n');
+                        debug_printf("\n");
                 }
         }
 }
