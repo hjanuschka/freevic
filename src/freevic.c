@@ -12,6 +12,7 @@ char * global_device="/dev/sg2";
 int global_export_cfgs=0;
 int global_wich_action=0;
 char * global_output=0x0;
+char * global_input=0x0;
 
 
 void dispHelp(void) {
@@ -23,6 +24,7 @@ printf("	   -e, --export-cfg     Device (default: not set)\n");
 printf("	   -I, --info         	Print info about the device\n");
 printf("	   -R, --records        Get the Vaping Records stored on your device\n");
 printf("	   -o, --output-file        Get the Vaping Records stored on your device\n");
+printf("	   -i, --input-file        Get the Vaping Records stored on your device\n");
 printf("	\n");
 exit(1);
 }
@@ -34,12 +36,13 @@ void parse_options(int argc, char ** argv){
 		{ "export-cfg",	0, NULL, 'e'},
 		{ "info",	0, NULL, 'I'},
 		{ "records",	0, NULL, 'R'},
+		{ "input-file",	0, NULL, 'i'},
 		{ NULL,		0, NULL, 0}
 	};
 	int c;
 
 	for (;;) {
-		c = getopt_long(argc, argv, "dheIo:RD:", longopts, (int *) 0);
+		c = getopt_long(argc, argv, "dhei:Io:RD:", longopts, (int *) 0);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -48,6 +51,9 @@ void parse_options(int argc, char ** argv){
 		break;
 		case 'I':
 			global_wich_action=0;
+		break;
+		case 'i':
+			global_input	= optarg;
 		break;
 		case 'R':
 			global_wich_action=1;
@@ -83,9 +89,10 @@ int evic_get_records(char * device) {
 	int evic_device_handle;
 	uint8_t return_buffer[1024] = {0};
 	char * fw_block_file;
-	int x,y;
-
-	FILE * output;
+	int x,y, nread;
+	
+	float wattage;
+	FILE * output, *input;
 
 	uint8_t unlock_device_cdb_1[8]= {0xcc, 0x80, 0x02, 0x00,0x80,0x00,0x00,0x04};
 	uint8_t unlock_device_cdb_2[8]= {0x1e, 0x00, 0x00, 0x01,0x00,0x00,0x00,0x00};
@@ -100,36 +107,39 @@ int evic_get_records(char * device) {
 	struct  evic_vape_record   * vape_records;
 	
 
-	evic_device_handle=open(device, O_RDONLY);
+
 
 	
-	
-	//Unlock
-	freevic_cdb(evic_device_handle, unlock_device_cdb_1, sizeof(unlock_device_cdb_1), SG_DXFER_FROM_DEV, return_buffer, 0);
-	freevic_cdb(evic_device_handle, unlock_device_cdb_2, sizeof(unlock_device_cdb_2), SG_DXFER_FROM_DEV, return_buffer, 0);
-
+	if(global_input == 0x0) {
+		evic_device_handle=open(device, O_RDONLY);
+		//Unlock
+		freevic_cdb(evic_device_handle, unlock_device_cdb_1, sizeof(unlock_device_cdb_1), SG_DXFER_FROM_DEV, return_buffer, 0);
+		freevic_cdb(evic_device_handle, unlock_device_cdb_2, sizeof(unlock_device_cdb_2), SG_DXFER_FROM_DEV, return_buffer, 0);
+	}
 	if(global_output != 0x0) {
 		output=fopen(global_output, "wb");	
 	}
 	
 
-	printf("Date;Resistance;Voltage;Duration\n");
-	//Init record DL
-	//freevic_cdb(evic_device_handle, record_init, sizeof(record_init), SG_DXFER_FROM_DEV, return_buffer, 0);
-
-	//memset(return_buffer, 0x0, 1024);
-	//freevic_cdb(evic_device_handle, get_records1, sizeof(get_records1), SG_DXFER_FROM_DEV, return_buffer, sizeof(return_buffer));
-	//fwrite(return_buffer, sizeof(uint8_t), sizeof(return_buffer), output);
+	printf("Date\tResistance\tVoltage\tWattage\tDuration\n");
 	
+	
+	if(global_input != 0x0) {
+		input = fopen(global_input, "rb");
+				
+	}
 	
 	for(x=0; x<=16; x++) {
 		
-		freevic_cdb(evic_device_handle, record_init, sizeof(record_init), SG_DXFER_FROM_DEV, return_buffer, 0);
-	
-		memset(return_buffer, 0x0, 1024);
-		freevic_cdb(evic_device_handle, get_records1, sizeof(get_records1), SG_DXFER_FROM_DEV, return_buffer, sizeof(return_buffer));
-		
-		if(output) {
+		if(global_input != 0x0) {
+			nread=fread(return_buffer, sizeof(uint8_t), sizeof(return_buffer), input);
+			if(nread < 1023) break;
+		} else {
+			freevic_cdb(evic_device_handle, record_init, sizeof(record_init), SG_DXFER_FROM_DEV, return_buffer, 0);
+			memset(return_buffer, 0x0, 1024);
+			freevic_cdb(evic_device_handle, get_records1, sizeof(get_records1), SG_DXFER_FROM_DEV, return_buffer, sizeof(return_buffer));
+		}	
+		if(global_output) {
 			fwrite(return_buffer, sizeof(uint8_t), sizeof(return_buffer), output);
 		}
 		
@@ -140,7 +150,21 @@ int evic_get_records(char * device) {
 		for(y=0; y<128; y++) {
 				if(vape_records[y].duration == 255) break;
 				if(vape_records[y].year > 100 || vape_records[y].year == 0) continue;
-				printf("%u %u %u:%u:%u;%u;%u;%u\n", vape_records[y].year+2000, vape_records[y].unkown,vape_records[y].hours, vape_records[y].minutes, vape_records[y].seconds , vape_records[y].resistance, vape_records[y].voltage, vape_records[y].duration);	
+					
+				wattage=0;
+				
+				printf("%02u.%02u.%u %02u:%02u:%02u\t%.02f\t%.02f\t%.01f\t%.02f\n", 
+				 vape_records[y].unkown&5,
+				 vape_records[y].unkown>>4,
+				 vape_records[y].year+2000,
+				 vape_records[y].hours,
+				 vape_records[y].minutes,
+				 vape_records[y].seconds ,
+				 (float)vape_records[y].resistance/10,
+				 (float)vape_records[y].voltage/10, 
+				 (float)(vape_records[y].voltage*vape_records[y].voltage)/vape_records[y].resistance/10,
+				 (float)vape_records[y].duration/10
+				 );	
 		}
 		
 		
@@ -152,7 +176,7 @@ int evic_get_records(char * device) {
 	
 	
 	
-	if(output){
+	if(global_output){
 		fclose(output);
 	}
 
